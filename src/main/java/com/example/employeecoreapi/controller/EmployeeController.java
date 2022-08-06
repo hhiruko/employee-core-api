@@ -3,6 +3,7 @@ package com.example.employeecoreapi.controller;
 import com.example.employeecoreapi.model.EmployeeModel;
 import com.example.employeecoreapi.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,15 @@ import java.util.List;
 public class EmployeeController {
 
     @Autowired
+    Environment env;
+
+    @Autowired
     private EmployeeService employeeService;
+
+    @GetMapping("/check")
+    public String check(){
+        return "employee-core-api is working at " + env.getProperty("local.server.port");
+    }
 
     @PostMapping
     public ResponseEntity<String> createEmployee(@Valid @RequestBody EmployeeModel employeeModel){

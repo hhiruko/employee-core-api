@@ -1,54 +1,68 @@
 package com.example.employeecoreapi.service;
 
-import com.example.employeecoreapi.model.EmployeeModel;
+import com.example.employeecoreapi.model.EmployeeRequest;
+import com.example.employeecoreapi.model.EmployeeResponse;
+import com.example.employeecoreapi.repository.EmployeeEntity;
+import com.example.employeecoreapi.repository.EmployeeRepository;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService{
-    private static final HashMap<String, EmployeeModel> employeeMap = new HashMap<>();
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    static ModelMapper modelMapper = new ModelMapper();
 
     static {
-        EmployeeModel employeeModel1 = new EmployeeModel(UUID.randomUUID().toString(), "Hiro", "Nakamura",
-                "EXAMPLE CO.", "Engineer", "example1@gmail.com", 123000);
-        EmployeeModel employeeModel2 = new EmployeeModel(UUID.randomUUID().toString(), "Hanamizaka", "Nakamura",
-                "EXAMPLE CO.", "Engineer", "example2@gmail.com", 456000);
-        EmployeeModel employeeModel3 = new EmployeeModel(UUID.randomUUID().toString(), "Hiro", "Nobunaga",
-                "EXAMPLE CO.", "Engineer", "example3@gmail.com", 70000);
-
-        employeeMap.put(employeeModel1.getEmployeeId(), employeeModel1);
-        employeeMap.put(employeeModel2.getEmployeeId(), employeeModel2);
-        employeeMap.put(employeeModel3.getEmployeeId(), employeeModel3);
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
     }
 
     @Override
-    public void createEmployee(EmployeeModel employeeModel) {
-        employeeModel.setEmployeeId(UUID.randomUUID().toString());
-        employeeMap.put(employeeModel.getEmployeeId(), employeeModel);
+    public EmployeeResponse createEmployee(EmployeeRequest employeeRequest) {
+        employeeRequest.setEmployeeId(UUID.randomUUID().toString());
+
+        EmployeeEntity employeeEntity = modelMapper.map(employeeRequest, EmployeeEntity.class);
+        employeeRepository.save(employeeEntity);
+
+        return modelMapper.map(employeeEntity, EmployeeResponse.class);
     }
 
     @Override
-    public List<EmployeeModel> getAllEmployee() {
-        return new ArrayList<>(employeeMap.values());
+    public EmployeeResponse updateEmployee(EmployeeRequest employeeRequest) {
+        EmployeeEntity employeeEntity = modelMapper.map(employeeRequest, EmployeeEntity.class);
+
+        EmployeeEntity dbEntity = employeeRepository.getEmployeeEntityByEmployeeId(employeeRequest.getEmployeeId());
+
+        employeeEntity.setId(dbEntity.getId());
+        employeeRepository.save(employeeEntity);
+
+        return modelMapper.map(employeeEntity, EmployeeResponse.class);
     }
 
     @Override
-    public EmployeeModel getEmployee(String employeeId) {
-        return employeeMap.get(employeeId);
+    public EmployeeResponse getEmployeeById(String employeeId) {
+        EmployeeEntity employeeEntity = employeeRepository.getEmployeeEntityByEmployeeId(employeeId);
+
+        return modelMapper.map(employeeEntity, EmployeeResponse.class);
     }
 
     @Override
-    public void updateEmployee(String employeeId, EmployeeModel employeeModel) {
-        employeeModel.setEmployeeId(employeeId);
-        employeeMap.put(employeeId, employeeModel);
+    public List<EmployeeResponse> getAllEmployees() {
+        return employeeRepository.getEmployeeEntitiesBy().stream()
+                .map(employee -> modelMapper.map(employee, EmployeeResponse.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public void deleteEmployee(String employeeId) {
-        employeeMap.remove(employeeId);
+    public void deleteEmployeeById(String employeeId) {
+        employeeRepository.deleteEmployeeEntityByEmployeeId(employeeId);
     }
 }
